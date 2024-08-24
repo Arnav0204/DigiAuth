@@ -1,0 +1,132 @@
+package issuer
+
+import (
+	"bytes"
+	"encoding/json"
+	"io"
+	"net/http"
+)
+
+type RegisterDIDRequest struct {
+	Seed  string `json:"seed"`
+	Alias string `json:"alias"`
+	Role  string `json:"Role"`
+}
+
+type RegisterSchemaRequest struct {
+	Attributes    []string `json:"attributes"`
+	SchemaName    string   `json:"schema_name"`
+	SchemaVersion string   `json:"schema_version"`
+}
+
+type CreateCredentialDefinationRequest struct {
+	Schemaid string `json:"schemaid"`
+	Tag      string `json:"tag"`
+}
+
+func CreateCredentialDefination(w http.ResponseWriter, r *http.Request) {
+	var req CreateCredentialDefinationRequest
+	// Decode the request body into the req struct
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	// Convert the req struct to JSON for the external request
+	requestBody, err := json.Marshal(req)
+	if err != nil {
+		http.Error(w, "Failed to marshal request", http.StatusInternalServerError)
+		return
+	}
+
+	resp, err := http.Post("http://localhost:8041/credential-definations", "application/json", bytes.NewBuffer(requestBody))
+	if err != nil {
+		http.Error(w, "Failed to contact external service", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	// Read the response from the external service
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		http.Error(w, "Failed to read response", http.StatusInternalServerError)
+		return
+	}
+
+	// Return the response from the external service to the original caller
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(body)
+
+}
+
+// This is a function that registers schema with ledger
+func RegisterSchema(w http.ResponseWriter, r *http.Request) {
+	var req RegisterSchemaRequest
+	// Decode the request body into the req struct
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	// Convert the req struct to JSON for the external request
+	requestBody, err := json.Marshal(req)
+	if err != nil {
+		http.Error(w, "Failed to marshal request", http.StatusInternalServerError)
+		return
+	}
+
+	resp, err := http.Post("http://localhost:8041/schemas", "application/json", bytes.NewBuffer(requestBody))
+	if err != nil {
+		http.Error(w, "Failed to contact external service", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	// Read the response from the external service
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		http.Error(w, "Failed to read response", http.StatusInternalServerError)
+		return
+	}
+
+	// Return the response from the external service to the original caller
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(body)
+}
+
+// This is the function for registering DID with Ledger
+func RegisterDID(w http.ResponseWriter, r *http.Request) {
+	var req RegisterDIDRequest
+
+	// Decode the request body into the req struct
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	// Convert the req struct to JSON for the external request
+	requestBody, err := json.Marshal(req)
+	if err != nil {
+		http.Error(w, "Failed to marshal request", http.StatusInternalServerError)
+		return
+	}
+
+	// Send the request to the external endpoint
+	resp, err := http.Post("http://test.bcovrin.vonx.io/register", "application/json", bytes.NewBuffer(requestBody))
+	if err != nil {
+		http.Error(w, "Failed to contact external service", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	// Read the response from the external service
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		http.Error(w, "Failed to read response", http.StatusInternalServerError)
+		return
+	}
+
+	// Return the response from the external service to the original caller
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(body)
+}
