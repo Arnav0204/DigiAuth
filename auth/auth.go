@@ -64,6 +64,14 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var checkEmail string
+	queryByEmail := "SELECT email FROM users WHERE email=$1"
+	err := database.DB.QueryRow(context.Background(), queryByEmail, email).Scan(&checkEmail)
+	if err == nil {
+		http.Error(w, "User with this email already exists", http.StatusConflict)
+		return
+	}
+
 	// Hash the password to store in database
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
