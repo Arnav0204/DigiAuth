@@ -40,7 +40,7 @@ func GenerateJWT(email string, role string, id uuid.UUID) (string, error) {
 		"id":    id,
 		"email": email,
 		"role":  role,
-		"exp":   time.Now().Add(time.Hour * 24).Unix(), // Token expires in 2 hours
+		"exp":   time.Now().Add(time.Hour * 24).Unix(), // Token expires in 24 hours
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -61,6 +61,14 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 
 	if email == "" || password == "" || username == "" || role == "" {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	var checkEmail string
+	queryByEmail := "SELECT email FROM users WHERE email=$1"
+	err := database.DB.QueryRow(context.Background(), queryByEmail, email).Scan(&checkEmail)
+	if err == nil {
+		http.Error(w, "User with this email already exists", http.StatusConflict)
 		return
 	}
 
