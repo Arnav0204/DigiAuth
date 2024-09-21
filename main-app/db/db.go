@@ -1,4 +1,4 @@
-package database
+package db
 
 import (
 	"context"
@@ -11,11 +11,12 @@ import (
 
 var DB *pgx.Conn
 
-func InitDB() {
+func InitDB() error {
 	// Load .env file
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatalf("Error loading .env file")
+		return err
 	}
 
 	// Read environment variables
@@ -31,5 +32,14 @@ func InitDB() {
 	DB, err = pgx.Connect(context.Background(), connString)
 	if err != nil {
 		log.Fatalf("Unable to connect to database: %v", err)
+		return err
+	}
+
+	return nil
+}
+
+func CloseDB() {
+	if err := DB.Close(context.Background()); err != nil {
+		log.Fatalf("Error closing database connection: %v", err)
 	}
 }
