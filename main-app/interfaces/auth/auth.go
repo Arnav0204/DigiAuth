@@ -2,7 +2,8 @@ package auth
 
 import (
 	"context"
-	"digiauth/database"
+	"digiauth/main-app/db"
+
 	"encoding/json"
 	"net/http"
 	"os"
@@ -66,7 +67,7 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 
 	var checkEmail string
 	queryByEmail := "SELECT email FROM users WHERE email=$1"
-	err := database.DB.QueryRow(context.Background(), queryByEmail, email).Scan(&checkEmail)
+	err := db.DB.QueryRow(context.Background(), queryByEmail, email).Scan(&checkEmail)
 	if err == nil {
 		http.Error(w, "User with this email already exists", http.StatusConflict)
 		return
@@ -81,7 +82,7 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 
 	// Insert the user into the database
 	query := `INSERT INTO users (email, username, password, role) VALUES ($1, $2, $3, $4)`
-	_, err = database.DB.Exec(context.Background(), query, req.Email, req.Username, hashedPassword, req.Role)
+	_, err = db.DB.Exec(context.Background(), query, req.Email, req.Username, hashedPassword, req.Role)
 	if err != nil {
 		http.Error(w, "Error registering user", http.StatusInternalServerError)
 		return
@@ -109,7 +110,7 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 	// Query to retrieve the complete row
 	var user User
 	query := "SELECT id, email, username, password, role FROM users WHERE email=$1"
-	err := database.DB.QueryRow(context.Background(), query, email).Scan(&user.ID, &user.Email, &user.Username, &user.Password, &user.Role)
+	err := db.DB.QueryRow(context.Background(), query, email).Scan(&user.ID, &user.Email, &user.Username, &user.Password, &user.Role)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			http.Error(w, "Invalid email or password", http.StatusUnauthorized)
