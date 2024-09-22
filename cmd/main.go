@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"digiauth/main-app/db"
-	"digiauth/main-app/interfaces/auth"
 	"digiauth/main-app/interfaces/issuer"
 	"digiauth/main-app/interfaces/receiver"
 	"log"
@@ -35,7 +34,6 @@ func run() error {
 	defer db.CloseDB()
 
 	servers := []Server{
-		{"Auth", ":1010", auth.RegisterRoutes()},
 		{"Issuer", ":8080", issuer.RegisterRoutes()},
 		{"Receiver", ":6060", receiver.RegisterRoutes()},
 	}
