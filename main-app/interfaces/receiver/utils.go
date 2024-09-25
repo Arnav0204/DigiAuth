@@ -37,7 +37,7 @@ type ReceiveInvitationRequest struct {
 
 func GetConnections(w http.ResponseWriter, r *http.Request) {
 
-	resp, err := http.Get("http://localhost:8041/connections")
+	resp, err := http.Get("http://localhost:6041/connections")
 	if err != nil {
 		http.Error(w, "Failed to contact external service", http.StatusInternalServerError)
 		return
@@ -72,7 +72,7 @@ func ReceiveInvitation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := http.Post("http://localhost:8041/connections/receive-invitation", "application/json", bytes.NewBuffer(requestBody))
+	resp, err := http.Post("http://localhost:6041/connections/receive-invitation", "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
 		http.Error(w, "Failed to contact external service", http.StatusInternalServerError)
 		return
@@ -107,7 +107,7 @@ func CreateInvitation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := http.Post("http://localhost:8041/out-of-band/create-invitation", "application/json", bytes.NewBuffer(requestBody))
+	resp, err := http.Post("http://localhost:6041/connections/create-invitation", "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
 		http.Error(w, "Failed to contact external service", http.StatusInternalServerError)
 		return
