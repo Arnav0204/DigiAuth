@@ -20,17 +20,17 @@ type RegisterSchemaRequest struct {
 }
 
 type CreateCredentialDefinationRequest struct {
-	Schemaid string `json:"schemaid"`
+	Schemaid string `json:"schema_id"`
 	Tag      string `json:"tag"`
 }
 
 type CreateSendInvitationRequest struct {
-	Alias 				string 	 `json:"alias"`
-	HandshakeProtocols 	[]string `json:"handshake_protocols"`
-	MyLabel 			string 	 `json:"my_label"`
+	Alias              string   `json:"alias"`
+	HandshakeProtocols []string `json:"handshake_protocols"`
+	MyLabel            string   `json:"my_label"`
 }
 
-//This is for receiving invitation services
+// This is for receiving invitation services
 type Service struct {
 	Id              string   `json:"id"`
 	Type            string   `json:"type"`
@@ -39,17 +39,36 @@ type Service struct {
 }
 
 type ReceiveInvitationRequest struct {
-	AutoAccept bool `json:"auto_accept"`
-	Type string `json:"@type"`
-	Alias string `json:"alias"`
-	Id string `json:"@id"`
-	Label string `json:"label"`
-	HandshakeProtocols 	[]string `json:"handshake_protocols"`
-	Services []Service `json:"services"`
+	Type            string   `json:"@type"`
+	RecipientKeys   []string `json:"recipientKeys"`
+	Id              string   `json:"@id"`
+	Label           string   `json:"label"`
+	ServiceEndpoint string   `json:"serviceEndpoint"`
 }
 
-//This is the function to receive invitation for connection (rn status==deleted rest working fine)
-func ReceiveInvitation(w http.ResponseWriter, r *http.Request){
+func GetConnections(w http.ResponseWriter, r *http.Request) {
+
+	resp, err := http.Get("http://localhost:8041/connections")
+	if err != nil {
+		http.Error(w, "Failed to contact external service", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	// Read the response from the external service
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		http.Error(w, "Failed to read response", http.StatusInternalServerError)
+		return
+	}
+
+	// Return the response from the external service to the original caller
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(body)
+}
+
+// This is the function to receive invitation for connection (rn status==deleted rest working fine)
+func ReceiveInvitation(w http.ResponseWriter, r *http.Request) {
 	var req ReceiveInvitationRequest
 	//Decode the request body into req struct
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -64,7 +83,7 @@ func ReceiveInvitation(w http.ResponseWriter, r *http.Request){
 		return
 	}
 
-	resp, err := http.Post("http://localhost:8041/out-of-band/receive-invitation", "application/json", bytes.NewBuffer(requestBody))
+	resp, err := http.Post("http://localhost:8041/connections/receive-invitation", "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
 		http.Error(w, "Failed to contact external service", http.StatusInternalServerError)
 		return
@@ -83,23 +102,10 @@ func ReceiveInvitation(w http.ResponseWriter, r *http.Request){
 	w.Write(body)
 }
 
-//This is the function to create invitation for connection
-func CreateInvitation(w http.ResponseWriter, r *http.Request){
-	var req CreateSendInvitationRequest
-	//Decode the request body into req struct
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
-	}
+// This is the function to create invitation for connection
+func CreateInvitation(w http.ResponseWriter, r *http.Request) {
 
-	// Convert the req struct to JSON for the external request
-	requestBody, err := json.Marshal(req)
-	if err != nil {
-		http.Error(w, "Failed to marshal request", http.StatusInternalServerError)
-		return
-	}
-
-	resp, err := http.Post("http://localhost:8041/out-of-band/create-invitation", "application/json", bytes.NewBuffer(requestBody))
+	resp, err := http.Post("http://localhost:8041/connections/create-invitation", "application/json", bytes.NewBuffer([]byte{}))
 	if err != nil {
 		http.Error(w, "Failed to contact external service", http.StatusInternalServerError)
 		return
@@ -118,7 +124,7 @@ func CreateInvitation(w http.ResponseWriter, r *http.Request){
 	w.Write(body)
 }
 
-func CreateCredentialDefination(w http.ResponseWriter, r *http.Request) {
+func CreateCredentialDefinition(w http.ResponseWriter, r *http.Request) {
 	var req CreateCredentialDefinationRequest
 	// Decode the request body into the req struct
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -133,7 +139,7 @@ func CreateCredentialDefination(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := http.Post("http://localhost:8041/credential-definations", "application/json", bytes.NewBuffer(requestBody))
+	resp, err := http.Post("http://localhost:8041/credential-definitions", "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
 		http.Error(w, "Failed to contact external service", http.StatusInternalServerError)
 		return

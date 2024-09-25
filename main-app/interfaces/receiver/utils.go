@@ -28,13 +28,32 @@ type Service struct {
 }
 
 type ReceiveInvitationRequest struct {
-	AutoAccept         bool      `json:"auto_accept"`
-	Type               string    `json:"@type"`
-	Alias              string    `json:"alias"`
-	Id                 string    `json:"@id"`
-	Label              string    `json:"label"`
-	HandshakeProtocols []string  `json:"handshake_protocols"`
-	Services           []Service `json:"services"`
+	Type            string   `json:"@type"`
+	RecipientKeys   []string `json:"recipientKeys"`
+	Id              string   `json:"@id"`
+	Label           string   `json:"label"`
+	ServiceEndpoint string   `json:"serviceEndpoint"`
+}
+
+func GetConnections(w http.ResponseWriter, r *http.Request) {
+
+	resp, err := http.Get("http://localhost:8041/connections")
+	if err != nil {
+		http.Error(w, "Failed to contact external service", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	// Read the response from the external service
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		http.Error(w, "Failed to read response", http.StatusInternalServerError)
+		return
+	}
+
+	// Return the response from the external service to the original caller
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(body)
 }
 
 // This is the function to receive invitation for connection (rn status==deleted rest working fine)
@@ -53,7 +72,7 @@ func ReceiveInvitation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := http.Post("http://localhost:8041/out-of-band/receive-invitation", "application/json", bytes.NewBuffer(requestBody))
+	resp, err := http.Post("http://localhost:8041/connections/receive-invitation", "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
 		http.Error(w, "Failed to contact external service", http.StatusInternalServerError)
 		return
