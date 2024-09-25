@@ -34,8 +34,8 @@ func run() error {
 	defer db.CloseDB()
 
 	servers := []Server{
-		{"Issuer", ":8080", issuer.RegisterRoutes()},
-		{"Receiver", ":6060", receiver.RegisterRoutes()},
+		{"Issuer", ":1010", issuer.RegisterRoutes()},
+		{"Receiver", ":2020", receiver.RegisterRoutes()},
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
