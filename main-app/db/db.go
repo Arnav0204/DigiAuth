@@ -12,6 +12,7 @@ import (
 var DB *pgx.Conn
 
 func InitDB() error {
+	
 	// Load .env file
 	err := godotenv.Load("./.env")
 	if err != nil {
