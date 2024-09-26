@@ -1,5 +1,4 @@
-name: VM Login, Update, and Server Restart
-
+name: VM Login, Binary Upload, and Server Restart
 on:
   push:
     branches: [main]
@@ -8,34 +7,59 @@ on:
   workflow_dispatch:
 
 jobs:
-  update_and_restart:
+  build:
+    # Keep your existing build job as is
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.22.2"
+      - name: Build
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o digiauth-server cmd/main.go
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: digiauth-server
+          path: digiauth-server
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: digiauth-server
 
       - name: Setup SSH key
-        uses: webfactory/ssh-agent@v0.5.0
-        with:
-          ssh-private-key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
-
-      - name: Login to VM, update repo, and restart server
         env:
-          REPO_URL: ${{ github.repository }}
+          SSH_PRIVATE_KEY: ${{ secrets.VM_SSH_PRIVATE_KEY }}
         run: |
-          ssh -o StrictHostKeyChecking=no azureuser@20.70.181.223 << EOF
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.VM_IP }} >> ~/.ssh/known_hosts
+
+      - name: Copy binary to VM
+        run: |
+          scp -i ~/.ssh/id_rsa digiauth-server azureuser@${{ secrets.VM_IP }}:~/digiauth-server
+
+      - name: Deploy to VM
+        run: |
+          ssh -i ~/.ssh/id_rsa azureuser@${{ secrets.VM_IP }} << EOF
             echo "Successfully logged in to VM"
             
-            # Navigate to the repository directory (adjust the path if needed)
-            cd \$(basename ${REPO_URL})
+            # Make the binary executable
+            chmod +x ~/digiauth-server
             
-            # Pull the latest changes
-            git pull origin main
+            # Kill the existing server process if it's running
+            pkill -f "./digiauth-server" || true
             
-            # Attach to tmux session with ID 3, stop the server, and start it again
-            tmux send-keys -t 2 C-c
-            sleep 5  # Wait for the server to stop gracefully
-            tmux send-keys -t 2 'go run cmd/main.go' C-m
+            # Start the new server in the background
+            nohup ./digiauth-server > digiauth.log 2>&1 &
             
-            echo "Repository updated and server restarted"
+            echo "Binary updated and server restarted"
