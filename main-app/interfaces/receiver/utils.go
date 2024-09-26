@@ -56,6 +56,27 @@ func GetConnections(w http.ResponseWriter, r *http.Request) {
 	w.Write(body)
 }
 
+func GetCredentials(w http.ResponseWriter, r *http.Request){
+
+	resp, err := http.Get("http://localhost:6041/credentials")
+	if err != nil {
+		http.Error(w, "Failed to contact external service", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	// Read the response from the external service
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		http.Error(w, "Failed to read response", http.StatusInternalServerError)
+		return
+	}
+
+	// Return the response from the external service to the original caller
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(body)
+}
+
 // This is the function to receive invitation for connection (rn status==deleted rest working fine)
 func ReceiveInvitation(w http.ResponseWriter, r *http.Request) {
 	var req ReceiveInvitationRequest

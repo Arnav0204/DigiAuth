@@ -46,6 +46,70 @@ type ReceiveInvitationRequest struct {
 	ServiceEndpoint string   `json:"serviceEndpoint"`
 }
 
+type IndyFilter struct {
+	CredDefID string `json:"cred_def_id"`
+}
+
+type Filter struct {
+	Indy IndyFilter `json:"indy"`
+}
+
+type CredentialAttribute struct {
+	MimeType string `json:"mime-type"`
+	Name     string `json:"name"`
+	Value    string `json:"value"`
+}
+
+type CredentialPreview struct {
+	Type       string               `json:"@type"`
+	Attributes []CredentialAttribute `json:"attributes"`
+}
+
+type CredentialIssuance struct {
+	ConnectionID      string            `json:"connection_id"`
+	Filter            Filter            `json:"filter"`
+	CredentialPreview CredentialPreview `json:"credential_preview"`
+	SchemaIssuerDID   string            `json:"schema_issuer_did"`
+	SchemaVersion     string            `json:"schema_version"`
+	SchemaID          string            `json:"schema_id"`
+	SchemaName        string            `json:"schema_name"`
+	IssuerDID         string            `json:"issuer_did"`
+}
+
+func IssueCredential(w http.ResponseWriter, r *http.Request){
+	var req CredentialIssuance
+	// Decode the request body into the req struct
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	// Convert the req struct to JSON for the external request
+	requestBody, err := json.Marshal(req)
+	if err != nil {
+		http.Error(w, "Failed to marshal request", http.StatusInternalServerError)
+		return
+	}
+
+	resp, err := http.Post("http://localhost:8041/issue-credential-2.0/send", "application/json", bytes.NewBuffer(requestBody))
+	if err != nil {
+		http.Error(w, "Failed to contact external service", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	// Read the response from the external service
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		http.Error(w, "Failed to read response", http.StatusInternalServerError)
+		return
+	}
+
+	// Return the response from the external service to the original caller
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(body)
+}
+
 func GetConnections(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := http.Get("http://localhost:8041/connections")
