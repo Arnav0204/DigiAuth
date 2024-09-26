@@ -7,8 +7,7 @@ package db
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
+	"database/sql"
 )
 
 const createConnection = `-- name: CreateConnection :exec
@@ -19,7 +18,7 @@ VALUES ($1, $2, $3, $4)
 type CreateConnectionParams struct {
 	ConnectionID string
 	ID           int64
-	Alias        pgtype.Text
+	Alias        sql.NullString
 	MyRole       RoleEnum
 }
 

@@ -10,4 +10,4 @@ sql:
       go:
         package: "db"
         out: "sqlconfig"
-        sql_package: "pgx/v5"
+        sql_package: "pgx/v4"

@@ -5,10 +5,9 @@
 package db
 
 import (
+	"database/sql"
 	"database/sql/driver"
 	"fmt"
-
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type RoleEnum string
@@ -56,6 +55,6 @@ func (ns NullRoleEnum) Value() (driver.Value, error) {
 type Connection struct {
 	ConnectionID string
 	ID           int64
-	Alias        pgtype.Text
+	Alias        sql.NullString
 	MyRole       RoleEnum
 }
