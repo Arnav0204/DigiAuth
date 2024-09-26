@@ -61,7 +61,7 @@ type CredentialAttribute struct {
 }
 
 type CredentialPreview struct {
-	Type       string               `json:"@type"`
+	Type       string                `json:"@type"`
 	Attributes []CredentialAttribute `json:"attributes"`
 }
 
@@ -76,7 +76,11 @@ type CredentialIssuance struct {
 	IssuerDID         string            `json:"issuer_did"`
 }
 
-func IssueCredential(w http.ResponseWriter, r *http.Request){
+type GetConnectionsRequest struct {
+	Id string `json:"id"`
+}
+
+func IssueCredential(w http.ResponseWriter, r *http.Request) {
 	var req CredentialIssuance
 	// Decode the request body into the req struct
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -111,6 +115,11 @@ func IssueCredential(w http.ResponseWriter, r *http.Request){
 }
 
 func GetConnections(w http.ResponseWriter, r *http.Request) {
+	// var req GetConnectionsRequest
+	// if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	// 	http.Error(w, "Invalid request payload", http.StatusBadRequest)
+	// 	return
+	// }
 
 	resp, err := http.Get("http://localhost:8041/connections")
 	if err != nil {
@@ -119,7 +128,7 @@ func GetConnections(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-	// Read the response from the external service
+	//Read the response from the external service
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		http.Error(w, "Failed to read response", http.StatusInternalServerError)
