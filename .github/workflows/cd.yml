@@ -1,9 +1,9 @@
 name: VM Login, Binary Upload, and Server Restart
 on:
   push:
-    branches: [main]
+    branches: [arnav]
   pull_request:
-    branches: [main]
+    branches: [arnav]
   workflow_dispatch:
 jobs:
   build:
