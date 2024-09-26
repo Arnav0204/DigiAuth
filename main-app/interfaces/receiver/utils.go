@@ -104,7 +104,6 @@ func GetCredentials(w http.ResponseWriter, r *http.Request) {
 	w.Write(body)
 }
 
-// This is the function to receive invitation for connection (rn status==deleted rest working fine)
 func ReceiveInvitation(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
