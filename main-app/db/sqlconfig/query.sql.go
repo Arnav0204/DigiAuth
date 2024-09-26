@@ -7,7 +7,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 )
 
 const createConnection = `-- name: CreateConnection :exec
@@ -18,7 +17,7 @@ VALUES ($1, $2, $3, $4)
 type CreateConnectionParams struct {
 	ConnectionID string
 	ID           int64
-	Alias        sql.NullString
+	Alias        string
 	MyRole       RoleEnum
 }
 

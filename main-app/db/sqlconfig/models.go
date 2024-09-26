@@ -5,7 +5,6 @@
 package db
 
 import (
-	"database/sql"
 	"database/sql/driver"
 	"fmt"
 )
@@ -55,6 +54,6 @@ func (ns NullRoleEnum) Value() (driver.Value, error) {
 type Connection struct {
 	ConnectionID string
 	ID           int64
-	Alias        sql.NullString
+	Alias        string
 	MyRole       RoleEnum
 }

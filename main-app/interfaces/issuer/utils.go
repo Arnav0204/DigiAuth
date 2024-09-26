@@ -2,9 +2,14 @@ package issuer
 
 import (
 	"bytes"
+	"context"
+	"digiauth/main-app/db"
+	sql "digiauth/main-app/db/sqlconfig"
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
+	"time"
 )
 
 type RegisterDIDRequest struct {
@@ -25,9 +30,8 @@ type CreateCredentialDefinationRequest struct {
 }
 
 type CreateSendInvitationRequest struct {
-	Alias              string   `json:"alias"`
-	HandshakeProtocols []string `json:"handshake_protocols"`
-	MyLabel            string   `json:"my_label"`
+	Alias string `json:"alias"`
+	Id    int64  `json:"id"`
 }
 
 // This is for receiving invitation services
@@ -77,7 +81,7 @@ type CredentialIssuance struct {
 }
 
 type GetConnectionsRequest struct {
-	Id string `json:"id"`
+	Id int64 `json:"id"`
 }
 
 func IssueCredential(w http.ResponseWriter, r *http.Request) {
@@ -115,29 +119,24 @@ func IssueCredential(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetConnections(w http.ResponseWriter, r *http.Request) {
-	// var req GetConnectionsRequest
-	// if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-	// 	http.Error(w, "Invalid request payload", http.StatusBadRequest)
-	// 	return
-	// }
-
-	resp, err := http.Get("http://localhost:8041/connections")
-	if err != nil {
-		http.Error(w, "Failed to contact external service", http.StatusInternalServerError)
-		return
-	}
-	defer resp.Body.Close()
-
-	//Read the response from the external service
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		http.Error(w, "Failed to read response", http.StatusInternalServerError)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+	var req GetConnectionsRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
-	// Return the response from the external service to the original caller
+	queries := sql.New(db.DB)
+	connections, conerr := queries.GetConnectionsByUserID(ctx, req.Id)
+	if conerr != nil {
+		log.Println("Error inserting connection to db : ", conerr.Error())
+		http.Error(w, "Error inserting connection to db : "+conerr.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(body)
+	json.NewEncoder(w).Encode(map[string]interface{}{"connections": connections})
 }
 
 // This is the function to receive invitation for connection (rn status==deleted rest working fine)
@@ -177,6 +176,18 @@ func ReceiveInvitation(w http.ResponseWriter, r *http.Request) {
 
 // This is the function to create invitation for connection
 func CreateInvitation(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	var requestData CreateSendInvitationRequest
+
+	// Decode the JSON request body into the struct
+	err := json.NewDecoder(r.Body).Decode(&requestData)
+	if err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
 
 	resp, err := http.Post("http://localhost:8041/connections/create-invitation", "application/json", bytes.NewBuffer([]byte{}))
 	if err != nil {
@@ -192,7 +203,32 @@ func CreateInvitation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Return the response from the external service to the original caller
+	// Parse the JSON response
+	var responseData struct {
+		ConnectionID string `json:"connection_id"`
+	}
+
+	err = json.Unmarshal(body, &responseData)
+	if err != nil {
+		http.Error(w, "Failed to parse response", http.StatusInternalServerError)
+		return
+	}
+
+	queries := sql.New(db.DB)
+	insertDBErr := queries.CreateConnection(ctx, sql.CreateConnectionParams{
+		ConnectionID: responseData.ConnectionID,
+		ID:           requestData.Id,
+		Alias:        requestData.Alias,
+		MyRole:       "inviter",
+	})
+
+	if insertDBErr != nil {
+		log.Println("Error inserting connection to db : ", insertDBErr.Error())
+		http.Error(w, "Error inserting connection to db : "+insertDBErr.Error(), http.StatusInternalServerError)
+		return
+
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(body)
 }
