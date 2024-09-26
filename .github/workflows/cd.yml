@@ -1,0 +1,41 @@
+name: VM Login, Update, and Server Restart
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  update_and_restart:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Setup SSH key
+        uses: webfactory/ssh-agent@v0.5.0
+        with:
+          ssh-private-key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
+
+      - name: Login to VM, update repo, and restart server
+        env:
+          REPO_URL: ${{ github.repository }}
+        run: |
+          ssh -o StrictHostKeyChecking=no azureuser@20.70.181.223 << EOF
+            echo "Successfully logged in to VM"
+            
+            # Navigate to the repository directory (adjust the path if needed)
+            cd \$(basename ${REPO_URL})
+            
+            # Pull the latest changes
+            git pull origin main
+            
+            # Attach to tmux session with ID 3, stop the server, and start it again
+            tmux send-keys -t 2 C-c
+            sleep 5  # Wait for the server to stop gracefully
+            tmux send-keys -t 2 'go run cmd/main.go' C-m
+            
+            echo "Repository updated and server restarted"
