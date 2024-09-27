@@ -13,6 +13,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/rs/cors"
 )
 
 type Server struct {
@@ -32,10 +34,16 @@ func run() error {
 		return err
 	}
 	defer db.CloseDB()
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"},                             // Adjust as needed, "*" allows all origins
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},  // Allowed HTTP methods
+		AllowedHeaders:   []string{"Authorization", "Content-Type"}, // Allowed headers
+		AllowCredentials: true,
+	})
 
 	servers := []Server{
-		{"Issuer", ":1025", issuer.RegisterRoutes()},
-		{"Receiver", ":2025", receiver.RegisterRoutes()},
+		{"Issuer", ":1025", c.Handler(issuer.RegisterRoutes())},
+		{"Receiver", ":2025", c.Handler(receiver.RegisterRoutes())},
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())

@@ -1,6 +1,8 @@
 package receiver
 
-import "github.com/gorilla/mux"
+import (
+	"github.com/gorilla/mux"
+)
 
 func RegisterRoutes() *mux.Router {
 	r := mux.NewRouter()
