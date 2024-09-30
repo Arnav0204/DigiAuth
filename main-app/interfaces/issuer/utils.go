@@ -46,8 +46,26 @@ type ReceiveInvitationRequest struct {
 	Type            string   `json:"@type"`
 	RecipientKeys   []string `json:"recipientKeys"`
 	Id              string   `json:"@id"`
+	UserID          int64    `json:"id"`
 	Label           string   `json:"label"`
 	ServiceEndpoint string   `json:"serviceEndpoint"`
+}
+
+type ResponseReceiveInvitation struct {
+	State              string `json:"state"`
+	CreatedAt          string `json:"created_at"`
+	UpdatedAt          string `json:"updated_at"`
+	ConnectionID       string `json:"connection_id"`
+	MyDID              string `json:"my_did"`
+	TheirLabel         string `json:"their_label"`
+	TheirRole          string `json:"their_role"`
+	ConnectionProtocol string `json:"connection_protocol"`
+	RFC23State         string `json:"rfc23_state"`
+	InvitationKey      string `json:"invitation_key"`
+	InvitationMsgID    string `json:"invitation_msg_id"`
+	RequestID          string `json:"request_id"`
+	Accept             string `json:"accept"`
+	InvitationMode     string `json:"invitation_mode"`
 }
 
 type IndyFilter struct {
@@ -139,17 +157,18 @@ func GetConnections(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]interface{}{"connections": connections})
 }
 
-// This is the function to receive invitation for connection (rn status==deleted rest working fine)
 func ReceiveInvitation(w http.ResponseWriter, r *http.Request) {
-	var req ReceiveInvitationRequest
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+	var requestData ReceiveInvitationRequest
 	//Decode the request body into req struct
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
 	// Convert the req struct to JSON for the external request
-	requestBody, err := json.Marshal(req)
+	requestBody, err := json.Marshal(requestData)
 	if err != nil {
 		http.Error(w, "Failed to marshal request", http.StatusInternalServerError)
 		return
@@ -167,6 +186,27 @@ func ReceiveInvitation(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "Failed to read response", http.StatusInternalServerError)
 		return
+	}
+
+	var responseData ResponseReceiveInvitation
+	err = json.Unmarshal(body, &responseData)
+	if err != nil {
+		http.Error(w, "Failed to parse response", http.StatusInternalServerError)
+		return
+	}
+
+	queries := sql.New(db.DB)
+	insertDBErr := queries.CreateConnection(ctx, sql.CreateConnectionParams{
+		ConnectionID: responseData.ConnectionID,
+		ID:           requestData.UserID,
+		Alias:        responseData.TheirLabel,
+		MyRole:       "invitee",
+	})
+	if insertDBErr != nil {
+		log.Println("Error inserting connection to db : ", insertDBErr.Error())
+		http.Error(w, "Error inserting connection to db : "+insertDBErr.Error(), http.StatusInternalServerError)
+		return
+
 	}
 
 	// Return the response from the external service to the original caller
