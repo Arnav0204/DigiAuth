@@ -31,6 +31,22 @@ func (q *Queries) CreateConnection(ctx context.Context, arg CreateConnectionPara
 	return err
 }
 
+const createSchema = `-- name: CreateSchema :exec
+INSERT INTO schemas (schema_id,credential_definition_id,schema_name)
+VALUES ($1, $2, $3)
+`
+
+type CreateSchemaParams struct {
+	SchemaID               string
+	CredentialDefinitionID string
+	SchemaName             string
+}
+
+func (q *Queries) CreateSchema(ctx context.Context, arg CreateSchemaParams) error {
+	_, err := q.db.Exec(ctx, createSchema, arg.SchemaID, arg.CredentialDefinitionID, arg.SchemaName)
+	return err
+}
+
 const getConnectionsByUserID = `-- name: GetConnectionsByUserID :many
 SELECT connection_id, id, alias, my_role 
 FROM connections
@@ -52,6 +68,31 @@ func (q *Queries) GetConnectionsByUserID(ctx context.Context, id int64) ([]Conne
 			&i.Alias,
 			&i.MyRole,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getSchema = `-- name: GetSchema :many
+SELECT schema_id, credential_definition_id, schema_name
+FROM schemas
+`
+
+func (q *Queries) GetSchema(ctx context.Context) ([]Schema, error) {
+	rows, err := q.db.Query(ctx, getSchema)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Schema
+	for rows.Next() {
+		var i Schema
+		if err := rows.Scan(&i.SchemaID, &i.CredentialDefinitionID, &i.SchemaName); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

@@ -57,3 +57,9 @@ type Connection struct {
 	Alias        string
 	MyRole       RoleEnum
 }
+
+type Schema struct {
+	SchemaID               string
+	CredentialDefinitionID string
+	SchemaName             string
+}
