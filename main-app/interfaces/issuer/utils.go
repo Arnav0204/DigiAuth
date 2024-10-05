@@ -273,43 +273,11 @@ func CreateInvitation(w http.ResponseWriter, r *http.Request) {
 	w.Write(body)
 }
 
-func CreateCredentialDefinition(w http.ResponseWriter, r *http.Request) {
-	var req CreateCredentialDefinationRequest
-	// Decode the request body into the req struct
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
-	}
-
-	// Convert the req struct to JSON for the external request
-	requestBody, err := json.Marshal(req)
-	if err != nil {
-		http.Error(w, "Failed to marshal request", http.StatusInternalServerError)
-		return
-	}
-
-	resp, err := http.Post("http://localhost:8041/credential-definitions", "application/json", bytes.NewBuffer(requestBody))
-	if err != nil {
-		http.Error(w, "Failed to contact external service", http.StatusInternalServerError)
-		return
-	}
-	defer resp.Body.Close()
-
-	// Read the response from the external service
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		http.Error(w, "Failed to read response", http.StatusInternalServerError)
-		return
-	}
-
-	// Return the response from the external service to the original caller
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(body)
-
-}
-
 // This is a function that registers schema with ledger
 func RegisterSchema(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
 	var req RegisterSchemaRequest
 	// Decode the request body into the req struct
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -324,23 +292,81 @@ func RegisterSchema(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := http.Post("http://localhost:8041/schemas", "application/json", bytes.NewBuffer(requestBody))
+	registerSchemaResp, err := http.Post("http://localhost:8041/schemas", "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
 		http.Error(w, "Failed to contact external service", http.StatusInternalServerError)
 		return
 	}
-	defer resp.Body.Close()
+	defer registerSchemaResp.Body.Close()
 
 	// Read the response from the external service
-	body, err := io.ReadAll(resp.Body)
+	registerSchemaBody, err := io.ReadAll(registerSchemaResp.Body)
 	if err != nil {
-		http.Error(w, "Failed to read response", http.StatusInternalServerError)
+		http.Error(w, "Failed to read response from register schema route", http.StatusInternalServerError)
 		return
+	}
+
+	var registerSchemaResponseData struct {
+		SchemaId string `json:"schema_id"`
+	}
+	err = json.Unmarshal(registerSchemaBody, &registerSchemaResponseData)
+	if err != nil {
+		http.Error(w, "Failed to parse response", http.StatusInternalServerError)
+		return
+	}
+
+	createCredentialDefinationRequestBody := map[string]interface{}{
+		"schema_id":                registerSchemaResponseData.SchemaId,
+		"tag":                      "default",
+		"support_revocation":       true,
+		"revocation_registry_size": 1000,
+	}
+
+	// Marshal the map into a JSON byte slice
+	RequestBody, err := json.Marshal(createCredentialDefinationRequestBody)
+	if err != nil {
+		http.Error(w, "Failed to marshal JSON", http.StatusInternalServerError)
+		return
+	}
+
+	createCredentialDefinationResp, err := http.Post("http://localhost:8041/credential-definitions", "application/json", bytes.NewBuffer(RequestBody))
+	if err != nil {
+		http.Error(w, "Failed to contact external service", http.StatusInternalServerError)
+		return
+	}
+	defer createCredentialDefinationResp.Body.Close()
+
+	createCredentialDefinationBody, err := io.ReadAll(createCredentialDefinationResp.Body)
+	if err != nil {
+		http.Error(w, "Failed to read response from create credential definition route", http.StatusInternalServerError)
+		return
+	}
+
+	var createCredentialDefinationResponseData struct {
+		CrendentialDefinitionId string `json:"crendential_definition_id"`
+	}
+	err = json.Unmarshal(createCredentialDefinationBody, &createCredentialDefinationResponseData)
+	if err != nil {
+		http.Error(w, "Failed to parse response", http.StatusInternalServerError)
+		return
+	}
+
+	queries := sql.New(db.DB)
+	insertDBErr := queries.CreateSchema(ctx, sql.CreateSchemaParams{
+		SchemaID:               registerSchemaResponseData.SchemaId,
+		CredentialDefinitionID: createCredentialDefinationResponseData.CrendentialDefinitionId,
+		SchemaName:             req.SchemaName,
+	})
+	if insertDBErr != nil {
+		log.Println("Error inserting connection to db : ", insertDBErr.Error())
+		http.Error(w, "Error inserting connection to db : "+insertDBErr.Error(), http.StatusInternalServerError)
+		return
+
 	}
 
 	// Return the response from the external service to the original caller
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(body)
+	w.Write([]byte(`{"message": "Schema registered successfully"}`))
 }
 
 // This is the function for registering DID with Ledger
