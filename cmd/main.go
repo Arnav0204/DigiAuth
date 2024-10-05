@@ -6,6 +6,7 @@ import (
 	"digiauth/main-app/db"
 	"digiauth/main-app/interfaces/issuer"
 	"digiauth/main-app/interfaces/receiver"
+	"digiauth/main-app/interfaces/verifier"
 	"log"
 	"net/http"
 	"os"
@@ -44,6 +45,7 @@ func run() error {
 	servers := []Server{
 		{"Issuer", ":1025", c.Handler(issuer.RegisterRoutes())},
 		{"Receiver", ":2025", c.Handler(receiver.RegisterRoutes())},
+		{"Verifier", ":3025", c.Handler(verifier.RegisterRoutes())},
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
