@@ -2,11 +2,11 @@ package main
 
 import (
 	"context"
+	"digiauth/pkg/main-app/db"
+	issuer "digiauth/pkg/main-app/issuer/routes"
+	receiver "digiauth/pkg/main-app/user/routes"
+	verifier "digiauth/pkg/main-app/verifier/routes"
 
-	"digiauth/main-app/db"
-	"digiauth/main-app/interfaces/issuer"
-	"digiauth/main-app/interfaces/receiver"
-	"digiauth/main-app/interfaces/verifier"
 	"log"
 	"net/http"
 	"os"
