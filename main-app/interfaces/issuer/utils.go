@@ -343,8 +343,9 @@ func RegisterSchema(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var createCredentialDefinationResponseData struct {
-		CrendentialDefinitionId string `json:"crendential_definition_id"`
+		CrendentialDefinitionId string `json:"credential_definition_id"`
 	}
+
 	err = json.Unmarshal(createCredentialDefinationBody, &createCredentialDefinationResponseData)
 	if err != nil {
 		http.Error(w, "Failed to parse response", http.StatusInternalServerError)
