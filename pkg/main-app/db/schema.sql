@@ -13,5 +13,6 @@ CREATE TABLE IF NOT EXISTS schemas (
     schema_id VARCHAR NOT NULL,
     credential_definition_id VARCHAR NOT NULL,
     schema_name VARCHAR NOT NULL,
+    attributes TEXT[],
     PRIMARY KEY (schema_id)
 );
