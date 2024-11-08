@@ -1,13 +1,14 @@
 name: VM Login, Binary Upload, and Server Restart
+
 on:
   push:
     branches: [arnav]
   pull_request:
     branches: [arnav]
   workflow_dispatch:
+
 jobs:
   build:
-    # Keep your existing build job as is
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -24,6 +25,7 @@ jobs:
         with:
           name: digiauth-server
           path: digiauth-server
+
   deploy:
     needs: build
     runs-on: ubuntu-latest
@@ -32,6 +34,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: digiauth-server
+
       - name: Setup SSH key
         env:
           SSH_PRIVATE_KEY: ${{ secrets.VM_SSH_PRIVATE_KEY }}
@@ -40,26 +43,33 @@ jobs:
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.VM_IP }} >> ~/.ssh/known_hosts
+
+      - name: Test SSH connection
+        run: |
+          ssh -vvv -i ~/.ssh/id_rsa azureuser@${{ secrets.VM_IP }} "echo 'Connection successful'"
+
       - name: Stop existing server
         run: |
-          ssh -i ~/.ssh/id_rsa azureuser@${{ secrets.VM_IP }} << EOF
+          ssh -tt -i ~/.ssh/id_rsa azureuser@${{ secrets.VM_IP }} << EOF
             echo "Stopping existing server..."
             pkill -f "./digiauth-server" || true
             sleep 5  # Give the process some time to fully stop
           EOF
+
       - name: Copy binary to VM
         run: |
-          scp -i ~/.ssh/id_rsa digiauth-server azureuser@${{ secrets.VM_IP }}:~/digiauth-server
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa digiauth-server azureuser@${{ secrets.VM_IP }}:~/digiauth-server
+
       - name: Deploy to VM
         run: |
-          ssh -i ~/.ssh/id_rsa azureuser@${{ secrets.VM_IP }} << EOF
+          ssh -tt -i ~/.ssh/id_rsa azureuser@${{ secrets.VM_IP }} << EOF
             echo "Successfully logged in to VM"
             
             # Make the binary executable
             chmod +x ~/digiauth-server
             
             # Start the new server in the background
-            nohup ./digiauth-server > digiauth.log 2>&1 &
+            nohup ~/digiauth-server > ~/digiauth.log 2>&1 &
             
             echo "Binary updated and server restarted"
           EOF
