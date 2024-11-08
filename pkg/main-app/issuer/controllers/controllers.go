@@ -140,6 +140,8 @@ func CreateInvitation(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
+	log.Println("request data: ", requestData)
+
 	resp, err := http.Post("http://localhost:8041/connections/create-invitation", "application/json", bytes.NewBuffer([]byte{}))
 	if err != nil {
 		http.Error(w, "Failed to contact external service", http.StatusInternalServerError)
@@ -177,7 +179,6 @@ func CreateInvitation(w http.ResponseWriter, r *http.Request) {
 		log.Println("Error inserting connection to db : ", insertDBErr.Error())
 		http.Error(w, "Error inserting connection to db : "+insertDBErr.Error(), http.StatusInternalServerError)
 		return
-
 	}
 
 	w.Header().Set("Content-Type", "application/json")
