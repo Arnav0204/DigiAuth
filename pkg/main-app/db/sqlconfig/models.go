@@ -62,4 +62,5 @@ type Schema struct {
 	SchemaID               string
 	CredentialDefinitionID string
 	SchemaName             string
+	Attributes             []string
 }
