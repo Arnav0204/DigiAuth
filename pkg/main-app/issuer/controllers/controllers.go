@@ -67,6 +67,26 @@ func GetConnections(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{"connections": connections})
 }
+func GetSchemasDB(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	// Initialize the SQL queries struct
+	queries := sql.New(db.DB)
+
+	// Fetch all schemas from the database
+	schemas, err := queries.GetSchema(ctx)
+	if err != nil {
+		log.Println("Error fetching schemas from db:", err.Error())
+		http.Error(w, "Error fetching schemas from db: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Set response header and encode the schemas as JSON
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{"schemas": schemas})
+}
+
 
 func ReceiveInvitation(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
@@ -77,7 +97,7 @@ func ReceiveInvitation(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
-
+	// log.Println("receiv")
 	// Convert the req struct to JSON for the external request
 	requestBody, err := json.Marshal(requestData)
 	if err != nil {
