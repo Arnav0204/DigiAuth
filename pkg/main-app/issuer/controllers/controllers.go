@@ -67,25 +67,43 @@ func GetConnections(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{"connections": connections})
 }
+
 func GetSchemasDB(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
+    ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+    defer cancel()
 
-	// Initialize the SQL queries struct
-	queries := sql.New(db.DB)
+    // Define the request body model (for SchemaIdDB)
+    var req models.SchemaIdDB
+    // Initialize the SQL queries struct
+    queries := sql.New(db.DB)
 
-	// Fetch all schemas from the database
-	schemas, err := queries.GetSchema(ctx)
-	if err != nil {
-		log.Println("Error fetching schemas from db:", err.Error())
-		http.Error(w, "Error fetching schemas from db: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
+    // Decode the request body into SchemaIdDB
+    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+        http.Error(w, "Invalid request payload", http.StatusBadRequest)
+        return
+    }
 
-	// Set response header and encode the schemas as JSON
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{"schemas": schemas})
+    // Fetch the schema by ID from the database using GetSchemaById
+    schema, err := queries.GetSchemaById(ctx, req.Id)
+    if err != nil {
+        log.Println("Error fetching schema from db:", err.Error())
+        http.Error(w, "Error fetching schema from db: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
+
+    // Map the result into a response format
+    response := map[string]interface{}{
+        "schema_id":              schema.SchemaID,
+        "credential_definition_id": schema.CredentialDefinitionID,
+        "schema_name":            schema.SchemaName,
+        "attributes":             schema.Attributes,
+    }
+
+    // Set response header and encode the schema response as JSON
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(response)
 }
+
 
 
 func ReceiveInvitation(w http.ResponseWriter, r *http.Request) {

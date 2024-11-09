@@ -22,6 +22,17 @@ type CreateSendInvitationRequest struct {
 	Id    int64  `json:"id"`
 }
 
+type SchemaIdDB struct {
+	Id string `json:"id"`
+}
+
+type SchemaResponse struct {
+	SchemaID               string   `json:"schema_id"`
+	CredentialDefinitionID string   `json:"credential_definition_id"`
+	SchemaName             string   `json:"schema_name"`
+	Attributes             []string `json:"attributes"`
+}
+
 // This is for receiving invitation services
 type Service struct {
 	Id              string   `json:"id"`
