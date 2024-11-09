@@ -84,24 +84,16 @@ func GetSchemasDB(w http.ResponseWriter, r *http.Request) {
     }
 
     // Fetch the schema by ID from the database using GetSchemaById
-    schema, err := queries.GetSchemaById(ctx, req.Id)
+    res, err := queries.GetSchemaById(ctx, req.Id)
     if err != nil {
         log.Println("Error fetching schema from db:", err.Error())
         http.Error(w, "Error fetching schema from db: "+err.Error(), http.StatusInternalServerError)
         return
     }
 
-    // Map the result into a response format
-    response := map[string]interface{}{
-        "schema_id":              schema.SchemaID,
-        "credential_definition_id": schema.CredentialDefinitionID,
-        "schema_name":            schema.SchemaName,
-        "attributes":             schema.Attributes,
-    }
-
     // Set response header and encode the schema response as JSON
     w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(response)
+    json.NewEncoder(w).Encode(map[string]interface{}{"schema": res})
 }
 
 
