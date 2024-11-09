@@ -86,17 +86,24 @@ type CredentialPreview struct {
 	Attributes []CredentialAttribute `json:"attributes"`
 }
 
-type CredentialIssuance struct {
-	ConnectionID      string            `json:"connection_id"`
-	Filter            Filter            `json:"filter"`
-	CredentialPreview CredentialPreview `json:"credential_preview"`
-	SchemaIssuerDID   string            `json:"schema_issuer_did"`
-	SchemaVersion     string            `json:"schema_version"`
-	SchemaID          string            `json:"schema_id"`
-	SchemaName        string            `json:"schema_name"`
-	IssuerDID         string            `json:"issuer_did"`
-}
-
 type GetConnectionsRequest struct {
 	Id int64 `json:"id"`
+}
+
+type IssueCredentialRequest struct {
+	ConnectionID           string                `json:"connection_id"`
+	SchemaName             string                `json:"schema_name"`
+	SchemaId               string                `json:"schema_id"`
+	CredentialDefinitionId string                `json:"credential_definition_id"`
+	Attributes             []CredentialAttribute `json:"attributes"`
+}
+
+type CredentialIssuance struct {
+	ConnectionID      string                `json:"connection_id"`
+	Filter            map[string]IndyFilter `json:"filter"`
+	CredentialPreview CredentialPreview     `json:"credential_preview"`
+	SchemaIssuerDID   string                `json:"schema_issuer_did"`
+	SchemaID          string                `json:"schema_id"`
+	SchemaName        string                `json:"schema_name"`
+	IssuerDID         string                `json:"issuer_did"`
 }
