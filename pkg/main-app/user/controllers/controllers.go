@@ -92,7 +92,7 @@ func ReceiveInvitation(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to parse response", http.StatusInternalServerError)
 		return
 	}
-
+	log.Println("response data for receiving: ",responseData)
 	queries := sql.New(db.DB)
 	insertDBErr := queries.CreateConnection(ctx, sql.CreateConnectionParams{
 		ConnectionID: responseData.ConnectionID,

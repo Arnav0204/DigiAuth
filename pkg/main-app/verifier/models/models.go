@@ -48,3 +48,28 @@ type ReceiveInvitationRequest struct {
 type GetConnectionsRequest struct {
 	Id int64 `json:"id"`
 }
+
+type Restriction struct {
+	CredDefID string `json:"cred_def_id"`
+}
+
+type RequestedAttribute struct {
+	Name         string        `json:"name"`
+	Restrictions []Restriction `json:"restrictions"`
+}
+
+type IndyReq struct {
+	Name                string               `json:"name"`
+	Version             string               `json:"version"`
+	RequestedAttributes []RequestedAttribute `json:"requested_attributes"`
+	RequestedPredicates []interface{}        `json:"requested_predicates"`
+}
+
+type PresentationReq struct {
+	Indy IndyReq `json:"indy"`
+}
+
+type SendProofRequestRequest struct {
+	ConnectionID        string          `json:"connection_id"`
+	PresentationRequest PresentationReq `json:"presentation_request"`
+}
