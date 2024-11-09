@@ -113,3 +113,33 @@ func (q *Queries) GetSchema(ctx context.Context) ([]Schema, error) {
 	}
 	return items, nil
 }
+
+const getSchemaById = `-- name: GetSchemaById :many
+SELECT schema_id, credential_definition_id, schema_name, attributes
+FROM schemas WHERE schema_id=$1
+`
+
+func (q *Queries) GetSchemaById(ctx context.Context, schemaID string) ([]Schema, error) {
+	rows, err := q.db.Query(ctx, getSchemaById, schemaID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Schema
+	for rows.Next() {
+		var i Schema
+		if err := rows.Scan(
+			&i.SchemaID,
+			&i.CredentialDefinitionID,
+			&i.SchemaName,
+			&i.Attributes,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
