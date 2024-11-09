@@ -197,13 +197,17 @@ func RegisterSchema(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var Tag=req.SchemaName;
+	log.Println(Tag);
+	log.Println("req: ",req);
 	// Convert the req struct to JSON for the external request
 	requestBody, err := json.Marshal(req)
 	if err != nil {
 		http.Error(w, "Failed to marshal request", http.StatusInternalServerError)
 		return
 	}
-
+	
+	// log.Println("req schema after marshal: ",requestBody)
 	registerSchemaResp, err := http.Post("http://localhost:8041/schemas", "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
 		http.Error(w, "Failed to contact external service", http.StatusInternalServerError)
@@ -218,6 +222,7 @@ func RegisterSchema(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Println("resp: ",registerSchemaResp);
 	var registerSchemaResponseData struct {
 		SchemaId string `json:"schema_id"`
 	}
@@ -229,7 +234,7 @@ func RegisterSchema(w http.ResponseWriter, r *http.Request) {
 
 	createCredentialDefinationRequestBody := map[string]interface{}{
 		"schema_id":                registerSchemaResponseData.SchemaId,
-		"tag":                      "default",
+		"tag":                      Tag,
 		"support_revocation":       true,
 		"revocation_registry_size": 1000,
 	}
@@ -270,6 +275,7 @@ func RegisterSchema(w http.ResponseWriter, r *http.Request) {
 		SchemaID:               registerSchemaResponseData.SchemaId,
 		CredentialDefinitionID: createCredentialDefinationResponseData.CrendentialDefinitionId,
 		SchemaName:             req.SchemaName,
+		Attributes:             req.Attributes,
 	})
 	if insertDBErr != nil {
 		log.Println("Error inserting connection to db : ", insertDBErr.Error())
@@ -318,4 +324,46 @@ func RegisterDID(w http.ResponseWriter, r *http.Request) {
 	// Return the response from the external service to the original caller
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(body)
+}
+
+func GetSchemas(w http.ResponseWriter, r *http.Request) {
+	// Make the GET request to the external endpoint to fetch schemas
+	resp, err := http.Get("http://localhost:8041/schemas/created")
+	if err != nil {
+		http.Error(w, "Failed to fetch schemas from external service", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	// Check if the response status is OK
+	if resp.StatusCode != http.StatusOK {
+		http.Error(w, "Failed to fetch schemas: unexpected status code", http.StatusInternalServerError)
+		return
+	}
+
+	// Read the response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		http.Error(w, "Failed to read response body", http.StatusInternalServerError)
+		return
+	}
+
+	// Define a struct to capture the schema IDs from the response
+	var schemasResponse struct {
+		SchemaIds []string `json:"schema_ids"`
+	}
+
+	// Parse the JSON response into the struct
+	err = json.Unmarshal(body, &schemasResponse)
+	if err != nil {
+		http.Error(w, "Failed to parse schemas response", http.StatusInternalServerError)
+		return
+	}
+
+	// Log the received schema IDs for debugging
+	log.Printf("Fetched schema IDs: %v\n", schemasResponse.SchemaIds)
+
+	// Send the schema IDs back as a JSON response
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{"schema_ids": schemasResponse.SchemaIds})
 }

@@ -40,6 +40,7 @@ type CreateSchemaParams struct {
 	SchemaID               string
 	CredentialDefinitionID string
 	SchemaName             string
+	Attributes             []string
 }
 
 func (q *Queries) CreateSchema(ctx context.Context, arg CreateSchemaParams) error {

@@ -5,7 +5,7 @@ import (
 	"context"
 	"digiauth/pkg/main-app/db"
 	sql "digiauth/pkg/main-app/db/sqlconfig"
-	models "digiauth/pkg/main-app/issuer/models"
+	models "digiauth/pkg/main-app/verifier/models"
 	"encoding/json"
 	"io"
 	"log"
@@ -34,27 +34,6 @@ func GetConnections(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]interface{}{"connections": connections})
 }
 
-func GetCredentials(w http.ResponseWriter, r *http.Request) {
-
-	resp, err := http.Get("http://localhost:6041/credentials")
-	if err != nil {
-		http.Error(w, "Failed to contact external service", http.StatusInternalServerError)
-		return
-	}
-	defer resp.Body.Close()
-
-	// Read the response from the external service
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		http.Error(w, "Failed to read response", http.StatusInternalServerError)
-		return
-	}
-
-	// Return the response from the external service to the original caller
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(body)
-}
-
 func ReceiveInvitation(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
@@ -72,7 +51,7 @@ func ReceiveInvitation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := http.Post("http://localhost:6041/connections/receive-invitation", "application/json", bytes.NewBuffer(requestBody))
+	resp, err := http.Post("http://localhost:4041/connections/receive-invitation", "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
 		http.Error(w, "Failed to contact external service", http.StatusInternalServerError)
 		return
@@ -127,7 +106,7 @@ func CreateInvitation(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	resp, err := http.Post("http://localhost:6041/connections/create-invitation", "application/json", bytes.NewBuffer([]byte{}))
+	resp, err := http.Post("http://localhost:4041/connections/create-invitation", "application/json", bytes.NewBuffer([]byte{}))
 	if err != nil {
 		http.Error(w, "Failed to contact external service", http.StatusInternalServerError)
 		return
@@ -190,6 +169,40 @@ func RegisterDID(w http.ResponseWriter, r *http.Request) {
 
 	// Send the request to the external endpoint
 	resp, err := http.Post("http://test.bcovrin.vonx.io/register", "application/json", bytes.NewBuffer(requestBody))
+	if err != nil {
+		http.Error(w, "Failed to contact external service", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	// Read the response from the external service
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		http.Error(w, "Failed to read response", http.StatusInternalServerError)
+		return
+	}
+
+	// Return the response from the external service to the original caller
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(body)
+}
+
+func SendProofRequest(w http.ResponseWriter, r *http.Request){
+	var req models.SendProofRequestRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	// Convert the req struct to JSON for the external request
+	requestBody, err := json.Marshal(req)
+	if err != nil {
+		http.Error(w, "Failed to marshal request", http.StatusInternalServerError)
+		return
+	}
+
+	resp, err := http.Post("http://localhost:4041/present-proof-2.0/send-request", "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
 		http.Error(w, "Failed to contact external service", http.StatusInternalServerError)
 		return
