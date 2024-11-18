@@ -35,6 +35,7 @@ func InitDB() error {
 		log.Fatalf("Unable to connect to database: %v", err)
 		return err
 	}
+	log.Println("\n------------------------\nConnected to database\n------------------------")
 
 	return nil
 }
