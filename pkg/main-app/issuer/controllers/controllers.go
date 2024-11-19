@@ -284,8 +284,8 @@ func RegisterSchema(w http.ResponseWriter, r *http.Request) {
 	createCredentialDefinationRequestBody := map[string]interface{}{
 		"schema_id":                registerSchemaResponseData.SchemaId,
 		"tag":                      Tag,
-		"support_revocation":       true,
-		"revocation_registry_size": 1000,
+		"support-revocation":       true,
+		"revocation-registry-size": 1000,
 	}
 
 	// Marshal the map into a JSON byte slice
