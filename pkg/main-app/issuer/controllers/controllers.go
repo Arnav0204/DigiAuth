@@ -41,6 +41,7 @@ func IssueCredential(w http.ResponseWriter, r *http.Request) {
 		IssuerDID:       did,
 	}
 
+	log.Println(requestBody);
 	// Convert the req struct to JSON for the external request
 	ledgerRequest, err := json.Marshal(requestBody)
 	if err != nil {
@@ -55,13 +56,14 @@ func IssueCredential(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
+	log.Println(resp);
 	// Read the response from the external service
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		http.Error(w, "Failed to read response", http.StatusInternalServerError)
 		return
 	}
-
+    log.Println(body);
 	// Return the response from the external service to the original caller
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(body)
