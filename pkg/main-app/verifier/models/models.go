@@ -72,4 +72,15 @@ type PresentationReq struct {
 type SendProofRequestRequest struct {
 	ConnectionID        string          `json:"connection_id"`
 	PresentationRequest PresentationReq `json:"presentation_request"`
+	Trace               bool            `json:"trace"`
+}
+
+type ProofRecord struct {
+	Pres_Ex_Id   string `json:"pres_ex_id"`
+	State        string `json:"state"`
+	ConnectionId string `json:"connection_id"`
+}
+
+type ProofRecords struct {
+	Results []ProofRecord `json:"results"`
 }

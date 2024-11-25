@@ -48,3 +48,32 @@ type ReceiveInvitationRequest struct {
 type GetConnectionsRequest struct {
 	Id int64 `json:"id"`
 }
+
+type IndyReq struct {
+	Name                   string        `json:"name"`
+	Version                string        `json:"version"`
+	RequestedAttributes    []interface{} `json:"requested_attributes"`
+	RequestedPredicates    []interface{} `json:"requested_predicates"`
+	SelfAttestedAttributes []interface{} `json:"self_attested_attributes"`
+}
+
+type SendPresentationRequest struct {
+	ConnectionID string  `json:"connection_id"`
+	AutoRemove   bool    `json:"auto_remove"`
+	Trace        bool    `json:"trace"`
+	Indy         IndyReq `json:"indy"`
+}
+
+type ProofRecord struct {
+	Pres_Ex_Id   string `json:"pres_ex_id"`
+	State        string `json:"state"`
+	ConnectionId string `json:"connection_id"`
+}
+
+type ProofRecords struct {
+	Results []ProofRecord `json:"results"`
+}
+
+type SendPresentationResponse struct {
+	State string `json:"state"`
+}

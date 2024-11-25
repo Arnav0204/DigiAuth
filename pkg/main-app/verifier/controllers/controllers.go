@@ -187,7 +187,7 @@ func RegisterDID(w http.ResponseWriter, r *http.Request) {
 	w.Write(body)
 }
 
-func SendProofRequest(w http.ResponseWriter, r *http.Request){
+func SendProofRequest(w http.ResponseWriter, r *http.Request) {
 	var req models.SendProofRequestRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -219,4 +219,68 @@ func SendProofRequest(w http.ResponseWriter, r *http.Request){
 	// Return the response from the external service to the original caller
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(body)
+}
+
+func GetSchemasDB(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	// Initialize the SQL queries struct
+	queries := sql.New(db.DB)
+
+	// Fetch the schema by ID from the database using GetSchemaById
+	res, err := queries.GetSchema(ctx)
+	if err != nil {
+		log.Println("Error fetching schema from db:", err.Error())
+		http.Error(w, "Error fetching schema from db: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Set response header and encode the schema response as JSON
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{"schema": res})
+}
+
+func GetRecords(ConnectionId string) (models.ProofRecord, error) {
+	var allRecords models.ProofRecords
+	var singleRecord models.ProofRecord
+	var responseBody models.ProofRecord
+	resp, err := http.Get("http://localhost:6041/present-proof-2.0/records")
+	if err != nil {
+		log.Println("Failed to contact external service")
+		return models.ProofRecord{}, err
+	}
+	defer resp.Body.Close()
+
+	// Read the response from the external service
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Println("Failed to read response")
+		return models.ProofRecord{}, err
+	}
+
+	err = json.Unmarshal(body, &allRecords)
+	if err != nil {
+		log.Println("Failed to unmarshall body into allRecords")
+		return models.ProofRecord{}, err
+	}
+
+	for i := 0; i < len(allRecords.Results); i++ {
+		err = json.Unmarshal(body, &singleRecord)
+		if err != nil {
+			log.Println("Failed to unmarshall body into singleRecord")
+			return models.ProofRecord{}, err
+		}
+		if singleRecord.ConnectionId == ConnectionId {
+			if singleRecord.State == "request-received" {
+				responseBody = singleRecord
+			}
+		}
+	}
+
+	return responseBody, nil
+}
+
+func VerifyPresentation(w http.ResponseWriter, r *http.Request) {
+
 }
