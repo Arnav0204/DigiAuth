@@ -50,8 +50,6 @@ type GetConnectionsRequest struct {
 }
 
 type IndyReq struct {
-	Name                   string        `json:"name"`
-	Version                string        `json:"version"`
 	RequestedAttributes    []interface{} `json:"requested_attributes"`
 	RequestedPredicates    []interface{} `json:"requested_predicates"`
 	SelfAttestedAttributes []interface{} `json:"self_attested_attributes"`
