@@ -14,3 +14,7 @@ VALUES ($1, $2, $3, $4);
 -- name: GetSchema :many
 SELECT *
 FROM schemas;
+
+-- name: GetSchemaById :one
+SELECT *
+FROM schemas WHERE schema_id=$1;

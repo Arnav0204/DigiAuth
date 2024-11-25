@@ -113,3 +113,20 @@ func (q *Queries) GetSchema(ctx context.Context) ([]Schema, error) {
 	}
 	return items, nil
 }
+
+const getSchemaById = `-- name: GetSchemaById :one
+SELECT schema_id, credential_definition_id, schema_name, attributes
+FROM schemas WHERE schema_id=$1
+`
+
+func (q *Queries) GetSchemaById(ctx context.Context, schemaID string) (Schema, error) {
+	row := q.db.QueryRow(ctx, getSchemaById, schemaID)
+	var i Schema
+	err := row.Scan(
+		&i.SchemaID,
+		&i.CredentialDefinitionID,
+		&i.SchemaName,
+		&i.Attributes,
+	)
+	return i, err
+}
