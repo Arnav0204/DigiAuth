@@ -59,10 +59,10 @@ type RequestedAttribute struct {
 }
 
 type IndyReq struct {
-	Name                string               `json:"name"`
-	Version             string               `json:"version"`
-	RequestedAttributes []RequestedAttribute `json:"requested_attributes"`
-	RequestedPredicates []interface{}        `json:"requested_predicates"`
+	Name                string                        `json:"name"`
+	Version             string                        `json:"version"`
+	RequestedAttributes map[string]RequestedAttribute `json:"requested_attributes"`
+	RequestedPredicates []interface{}                 `json:"requested_predicates"`
 }
 
 type PresentationReq struct {
