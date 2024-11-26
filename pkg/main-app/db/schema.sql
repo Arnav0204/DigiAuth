@@ -1,10 +1,10 @@
 CREATE TYPE role_enum AS ENUM ('inviter', 'invitee');
 
-CREATE TABLE connections (
+CREATE TABLE IF NOT EXISTS connections (
     connection_id VARCHAR NOT NULL,
     id BIGSERIAL NOT NULL,
-    alias VARCHAR NOT NULL,
-    my_role role_enum NOT NULL,
+    my_mail_id TEXT,
+    their_mail_id TEXT,
     PRIMARY KEY (connection_id),
     FOREIGN KEY (id) REFERENCES users(id)
 );

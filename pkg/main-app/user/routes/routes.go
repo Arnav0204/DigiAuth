@@ -13,5 +13,6 @@ func RegisterRoutes() *mux.Router {
 	r.HandleFunc("/receive-invitation", controllers.ReceiveInvitation).Methods("POST")
 	r.HandleFunc("/connections", controllers.GetConnections).Methods("POST")
 	r.HandleFunc("/credentials", controllers.GetCredentials).Methods("GET")
+	r.HandleFunc("/send-presentation", controllers.SendPresentation).Methods("POST")
 	return r
 }

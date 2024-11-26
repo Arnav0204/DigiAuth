@@ -24,8 +24,9 @@ type RegisterDIDRequest struct {
 }
 
 type CreateSendInvitationRequest struct {
-	Alias string `json:"alias"`
-	Id    int64  `json:"id"`
+	Id          int64  `json:"id"`
+	MyMailId    string `json:"my_mail_id"`
+	TheirMailId string `json:"their_mail_id"`
 }
 
 // This is for receiving invitation services
@@ -37,12 +38,10 @@ type Service struct {
 }
 
 type ReceiveInvitationRequest struct {
-	Type            string   `json:"@type"`
-	RecipientKeys   []string `json:"recipientKeys"`
-	Id              string   `json:"@id"`
-	UserID          int64    `json:"id"`
-	Label           string   `json:"label"`
-	ServiceEndpoint string   `json:"serviceEndpoint"`
+	UserID      int64      `json:"id"`
+	TheirMailId string     `json:"their_mail_id"`
+	MyMailId    string     `json:"my_mail_id"`
+	Invitation  Invitation `json:"invitation"`
 }
 
 type GetConnectionsRequest struct {
@@ -59,10 +58,10 @@ type RequestedAttribute struct {
 }
 
 type IndyReq struct {
-	Name                string               `json:"name"`
-	Version             string               `json:"version"`
-	RequestedAttributes []RequestedAttribute `json:"requested_attributes"`
-	RequestedPredicates []interface{}        `json:"requested_predicates"`
+	Name                string                        `json:"name"`
+	Version             string                        `json:"version"`
+	RequestedAttributes map[string]RequestedAttribute `json:"requested_attributes"`
+	RequestedPredicates []interface{}                 `json:"requested_predicates"`
 }
 
 type PresentationReq struct {
@@ -72,4 +71,55 @@ type PresentationReq struct {
 type SendProofRequestRequest struct {
 	ConnectionID        string          `json:"connection_id"`
 	PresentationRequest PresentationReq `json:"presentation_request"`
+	Trace               bool            `json:"trace"`
+}
+
+type ProofRecord struct {
+	Pres_Ex_Id   string `json:"pres_ex_id"`
+	State        string `json:"state"`
+	ConnectionId string `json:"connection_id"`
+}
+
+type ProofRecords struct {
+	Results []ProofRecord `json:"results"`
+}
+type Invitation struct {
+	Type            string   `json:"@type"`
+	ID              string   `json:"@id"`
+	Label           string   `json:"label"`
+	RecipientKeys   []string `json:"recipientKeys"`
+	ServiceEndpoint string   `json:"serviceEndpoint"`
+}
+
+type InvitationResponse struct {
+	ConnectionID string     `json:"connection_id"`
+	Invitation   Invitation `json:"invitation"`
+}
+type SendEmail struct {
+	Email   string  `json:"email"`
+	Message Message `json:"message"`
+}
+
+type Message struct {
+	Subject string `json:"subject"`
+	Body    string `json:"body"`
+}
+
+type VerifyPresentationRequest struct {
+	MyMailId    string `json:"my_mail_id"`
+	TheirMailID string `json:"their_mail_id"`
+}
+
+type GetRecordsRequest struct {
+	ConnectionId string `json:"connection_id"`
+	State        string `json:"state"`
+}
+
+type Result struct {
+	ConnectionID string `json:"connection_id"`
+	State        string `json:"state"`
+}
+
+type GetRecordsResponse struct {
+	Results []Result `json:"results"`
 }

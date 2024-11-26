@@ -4,7 +4,7 @@ FROM connections
 WHERE id = $1;
 
 -- name: CreateConnection :exec
-INSERT INTO connections (connection_id, id, alias, my_role)
+INSERT INTO connections (connection_id, id, my_mail_id, their_mail_id)
 VALUES ($1, $2, $3, $4);
 
 -- name: CreateSchema :exec
@@ -18,3 +18,9 @@ FROM schemas;
 -- name: GetSchemaById :one
 SELECT *
 FROM schemas WHERE schema_id=$1;
+
+-- name: FetchConnections :many
+SELECT *
+FROM connections
+WHERE my_mail_id = $1
+  AND their_mail_id = $2;
