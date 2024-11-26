@@ -310,8 +310,8 @@ func GetRecords(ConnectionId string) (models.ProofRecord, error) {
 
 // ! Search mymailId and theirmailid in connections
 // ! Make requests to /records(using their_mail_id)
-// * check connection state to be "done" but only check for the matching connection id that were retrieved previously.
-// * If state is done for any of the records then return "true" or "verified" for that connection
+// ! check connection state to be "done" but only check for the matching connection id that were retrieved previously.
+// ! If state is done for any of the records then return "true" or "verified" for that connection
 func VerifyPresentation(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()

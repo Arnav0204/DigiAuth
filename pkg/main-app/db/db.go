@@ -5,14 +5,14 @@ import (
 	"log"
 	"os"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 	"github.com/joho/godotenv"
 )
 
 var DB *pgx.Conn
 
 func InitDB() error {
-	
+
 	// Load .env file
 	err := godotenv.Load("./.env")
 	if err != nil {
