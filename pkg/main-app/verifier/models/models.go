@@ -104,3 +104,7 @@ type Message struct {
 	Subject string `json:"subject"`
 	Body    string `json:"body"`
 }
+
+type VerifyPresentationRequest struct {
+	MyMailId    string `json:"my_mail_id"`
+}

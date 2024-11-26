@@ -49,9 +49,14 @@ type GetConnectionsRequest struct {
 }
 
 type IndyReq struct {
-	RequestedAttributes    []interface{} `json:"requested_attributes"`
-	RequestedPredicates    []interface{} `json:"requested_predicates"`
-	SelfAttestedAttributes []interface{} `json:"self_attested_attributes"`
+	RequestedAttributes    map[string]RequestedAttribute `json:"requested_attributes"`
+	RequestedPredicates    map[string]interface{}        `json:"requested_predicates"`
+	SelfAttestedAttributes map[string]string             `json:"self_attested_attributes"`
+}
+
+type RequestedAttribute struct {
+	CredID   string `json:"cred_id"`
+	Revealed bool   `json:"revealed"`
 }
 
 type SendPresentationRequest struct {

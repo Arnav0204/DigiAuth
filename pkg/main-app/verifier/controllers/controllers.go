@@ -309,5 +309,5 @@ func GetRecords(ConnectionId string) (models.ProofRecord, error) {
 }
 
 func VerifyPresentation(w http.ResponseWriter, r *http.Request) {
-
+	
 }

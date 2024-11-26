@@ -278,14 +278,20 @@ func GetRecords(ConnectionId string) (models.ProofRecord, error) {
 func SendPresentation(w http.ResponseWriter, r *http.Request) {
 	var req models.SendPresentationRequest
 	var sendPresentationResponse models.SendPresentationResponse
-	resp, err := GetRecords(req.ConnectionID)
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	record, err := GetRecords(req.ConnectionID)
 	if err != nil {
 		log.Println("GetRecords not working properly")
 		http.Error(w, "Failed to get records", http.StatusInternalServerError)
 		return
 	}
 
-	url := fmt.Sprintf("http://localhost:6041/present-proof-2.0/records/%s/send-presentation", resp.Pres_Ex_Id)
+	url := fmt.Sprintf("http://localhost:6041/present-proof-2.0/records/%s/send-presentation", record.Pres_Ex_Id)
 
 	requestBody, err := json.Marshal(req)
 	if err != nil {
@@ -298,6 +304,7 @@ func SendPresentation(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to send presentation", http.StatusInternalServerError)
 		return
 	}
+	defer response.Body.Close()
 
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
@@ -305,9 +312,16 @@ func SendPresentation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if response.StatusCode != http.StatusOK {
+		log.Printf("Non-200 Response: %s, Body: %s", response.Status, string(body))
+		http.Error(w, "Failed to send presentation", http.StatusInternalServerError)
+		return
+	}
+
 	err = json.Unmarshal(body, &sendPresentationResponse)
 	if err != nil {
 		http.Error(w, "Failed to unmarshal body from send presentation", http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
