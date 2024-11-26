@@ -18,8 +18,22 @@ type CreateCredentialDefinationRequest struct {
 }
 
 type CreateSendInvitationRequest struct {
-	Alias string `json:"alias"`
-	Id    int64  `json:"id"`
+	Id          int64  `json:"id"`
+	MyMailId    string `json:"my_mail_id"`
+	TheirMailId string `json:"their_mail_id"`
+}
+
+type Invitation struct {
+	Type            string   `json:"@type"`
+	ID              string   `json:"@id"`
+	Label           string   `json:"label"`
+	RecipientKeys   []string `json:"recipientKeys"`
+	ServiceEndpoint string   `json:"serviceEndpoint"`
+}
+
+type InvitationResponse struct {
+	ConnectionID string     `json:"connection_id"`
+	Invitation   Invitation `json:"invitation"`
 }
 
 type SchemaIdDB struct {
@@ -42,12 +56,10 @@ type Service struct {
 }
 
 type ReceiveInvitationRequest struct {
-	Type            string   `json:"@type"`
-	RecipientKeys   []string `json:"recipientKeys"`
-	Id              string   `json:"@id"`
-	UserID          int64    `json:"id"`
-	Label           string   `json:"label"`
-	ServiceEndpoint string   `json:"serviceEndpoint"`
+	UserID      int64      `json:"id"`
+	TheirMailId string     `json:"their_mail_id"`
+	MyMailId    string     `json:"my_mail_id"`
+	Invitation  Invitation `json:"invitation"`
 }
 
 type ResponseReceiveInvitation struct {
@@ -106,4 +118,14 @@ type CredentialIssuance struct {
 	SchemaID          string                `json:"schema_id"`
 	SchemaName        string                `json:"schema_name"`
 	IssuerDID         string                `json:"issuer_did"`
+}
+
+type SendEmail struct {
+	Email   string  `json:"email"`
+	Message Message `json:"message"`
+}
+
+type Message struct {
+	Subject string `json:"subject"`
+	Body    string `json:"body"`
 }

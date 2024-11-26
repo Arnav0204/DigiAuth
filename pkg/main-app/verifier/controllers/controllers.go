@@ -7,6 +7,7 @@ import (
 	sql "digiauth/pkg/main-app/db/sqlconfig"
 	models "digiauth/pkg/main-app/verifier/models"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -45,13 +46,13 @@ func ReceiveInvitation(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Convert the req struct to JSON for the external request
-	requestBody, err := json.Marshal(requestData)
+	requestBody, err := json.Marshal(requestData.Invitation)
 	if err != nil {
 		http.Error(w, "Failed to marshal request", http.StatusInternalServerError)
 		return
 	}
 
-	resp, err := http.Post("http://localhost:4041/connections/receive-invitation", "application/json", bytes.NewBuffer(requestBody))
+	resp, err := http.Post("http://localhost:6041/connections/receive-invitation", "application/json", bytes.NewBuffer(requestBody))
 	if err != nil {
 		http.Error(w, "Failed to contact external service", http.StatusInternalServerError)
 		return
@@ -71,13 +72,13 @@ func ReceiveInvitation(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to parse response", http.StatusInternalServerError)
 		return
 	}
-
+	log.Println("response data for receiving: ", responseData)
 	queries := sql.New(db.DB)
 	insertDBErr := queries.CreateConnection(ctx, sql.CreateConnectionParams{
 		ConnectionID: responseData.ConnectionID,
 		ID:           requestData.UserID,
-		Alias:        responseData.TheirLabel,
-		MyRole:       "invitee",
+		MyMailID:     requestData.MyMailId,
+		TheirMailID:  requestData.TheirMailId,
 	})
 	if insertDBErr != nil {
 		log.Println("Error inserting connection to db : ", insertDBErr.Error())
@@ -106,7 +107,9 @@ func CreateInvitation(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	resp, err := http.Post("http://localhost:4041/connections/create-invitation", "application/json", bytes.NewBuffer([]byte{}))
+	log.Println("request data: ", requestData)
+
+	resp, err := http.Post("http://localhost:8041/connections/create-invitation", "application/json", bytes.NewBuffer([]byte{}))
 	if err != nil {
 		http.Error(w, "Failed to contact external service", http.StatusInternalServerError)
 		return
@@ -121,9 +124,7 @@ func CreateInvitation(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Parse the JSON response
-	var responseData struct {
-		ConnectionID string `json:"connection_id"`
-	}
+	var responseData models.InvitationResponse
 
 	err = json.Unmarshal(body, &responseData)
 	if err != nil {
@@ -131,23 +132,49 @@ func CreateInvitation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Print the JSON string
+	invitationString, marshalErr := json.Marshal(responseData.Invitation)
+	if marshalErr != nil {
+		fmt.Println("Error:", marshalErr)
+		return
+	}
+
 	queries := sql.New(db.DB)
 	insertDBErr := queries.CreateConnection(ctx, sql.CreateConnectionParams{
 		ConnectionID: responseData.ConnectionID,
 		ID:           requestData.Id,
-		Alias:        requestData.Alias,
-		MyRole:       "inviter",
+		MyMailID:     requestData.MyMailId,
+		TheirMailID:  requestData.TheirMailId,
 	})
 
 	if insertDBErr != nil {
 		log.Println("Error inserting connection to db : ", insertDBErr.Error())
 		http.Error(w, "Error inserting connection to db : "+insertDBErr.Error(), http.StatusInternalServerError)
 		return
+	}
 
+	emailBody := models.SendEmail{
+		Email: requestData.TheirMailId,
+		Message: models.Message{
+			Subject: "Invitation to connect",
+			Body:    "{<h5 style=\"margin:0;padding:0\">\"invitation\":" + string(invitationString) + ",<br/>\"their_mail_id\":\"" + requestData.MyMailId + "\"</h5>}",
+		},
+	}
+
+	emailPayload, err := json.Marshal(emailBody)
+	if err != nil {
+		fmt.Println("Error in Marshalling emailbody:", err)
+		return
+	}
+
+	_, mailErr := http.Post("https://q648rhgza1.execute-api.ap-south-1.amazonaws.com/prod", "application/json", bytes.NewBuffer(emailPayload))
+	if mailErr != nil {
+		log.Println("Failed to send email in create invitation")
+		http.Error(w, "Failed to send email", http.StatusInternalServerError)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(body)
+	w.Write([]byte(`{"message": "Invitation Sent Successfully"}`))
 }
 
 // This is the function for registering DID with Ledger

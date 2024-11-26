@@ -54,8 +54,8 @@ func (ns NullRoleEnum) Value() (driver.Value, error) {
 type Connection struct {
 	ConnectionID string
 	ID           int64
-	Alias        string
-	MyRole       RoleEnum
+	MyMailID     string
+	TheirMailID  string
 }
 
 type Schema struct {

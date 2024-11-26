@@ -10,23 +10,23 @@ import (
 )
 
 const createConnection = `-- name: CreateConnection :exec
-INSERT INTO connections (connection_id, id, alias, my_role)
+INSERT INTO connections (connection_id, id, my_mail_id, their_mail_id)
 VALUES ($1, $2, $3, $4)
 `
 
 type CreateConnectionParams struct {
 	ConnectionID string
 	ID           int64
-	Alias        string
-	MyRole       RoleEnum
+	MyMailID     string
+	TheirMailID  string
 }
 
 func (q *Queries) CreateConnection(ctx context.Context, arg CreateConnectionParams) error {
 	_, err := q.db.Exec(ctx, createConnection,
 		arg.ConnectionID,
 		arg.ID,
-		arg.Alias,
-		arg.MyRole,
+		arg.MyMailID,
+		arg.TheirMailID,
 	)
 	return err
 }
@@ -54,7 +54,7 @@ func (q *Queries) CreateSchema(ctx context.Context, arg CreateSchemaParams) erro
 }
 
 const getConnectionsByUserID = `-- name: GetConnectionsByUserID :many
-SELECT connection_id, id, alias, my_role 
+SELECT connection_id, id, my_mail_id, their_mail_id 
 FROM connections
 WHERE id = $1
 `
@@ -71,8 +71,8 @@ func (q *Queries) GetConnectionsByUserID(ctx context.Context, id int64) ([]Conne
 		if err := rows.Scan(
 			&i.ConnectionID,
 			&i.ID,
-			&i.Alias,
-			&i.MyRole,
+			&i.MyMailID,
+			&i.TheirMailID,
 		); err != nil {
 			return nil, err
 		}
