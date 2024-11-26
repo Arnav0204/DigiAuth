@@ -351,7 +351,7 @@ func VerifyPresentation(w http.ResponseWriter, r *http.Request) {
 	marshalErr := json.Unmarshal(body, &responseData)
 	if marshalErr != nil {
 		log.Println("Error marshalling records response", marshalErr)
-		http.Error(w, "Error marshalling records response: "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Error marshalling records response: "+marshalErr.Error(), http.StatusInternalServerError)
 		return
 	}
 
