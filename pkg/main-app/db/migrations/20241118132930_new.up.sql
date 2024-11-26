@@ -5,16 +5,17 @@ CREATE TABLE IF NOT EXISTS users (
     isverified BOOLEAN NOT NULL DEFAULT false,
     role TEXT CHECK (role IN ('Issuer', 'User', 'Verifier')) NOT NULL,
     otp TEXT NOT NULL,
-    CONSTRAINT valid_email CHECK (email ~ '^[a-zA-Z0-9.!#$%&''+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*$')
+    CONSTRAINT valid_email CHECK (
+    email ~* '^[a-zA-Z0-9.!#$%&''*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z]{2,})+$')
 );
 
 CREATE TYPE role_enum AS ENUM ('inviter', 'invitee');
 
-CREATE TABLE connections (
+CREATE TABLE IF NOT EXISTS connections (
     connection_id VARCHAR NOT NULL,
     id BIGSERIAL NOT NULL,
-    alias VARCHAR NOT NULL,
-    my_role role_enum NOT NULL,
+    my_mail_id TEXT,
+    their_mail_id TEXT,
     PRIMARY KEY (connection_id),
     FOREIGN KEY (id) REFERENCES users(id)
 );
