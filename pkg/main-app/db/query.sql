@@ -18,3 +18,9 @@ FROM schemas;
 -- name: GetSchemaById :one
 SELECT *
 FROM schemas WHERE schema_id=$1;
+
+-- name: FetchConnections :many
+SELECT *
+FROM connections
+WHERE my_mail_id = $1
+  AND their_mail_id = $2;

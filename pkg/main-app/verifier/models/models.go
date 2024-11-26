@@ -107,4 +107,19 @@ type Message struct {
 
 type VerifyPresentationRequest struct {
 	MyMailId    string `json:"my_mail_id"`
+	TheirMailID string `json:"their_mail_id"`
+}
+
+type GetRecordsRequest struct {
+	ConnectionId string `json:"connection_id"`
+	State        string `json:"state"`
+}
+
+type Result struct {
+	ConnectionID string `json:"connection_id"`
+	State        string `json:"state"`
+}
+
+type GetRecordsResponse struct {
+	Results []Result `json:"results"`
 }

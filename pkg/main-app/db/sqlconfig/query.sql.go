@@ -53,6 +53,43 @@ func (q *Queries) CreateSchema(ctx context.Context, arg CreateSchemaParams) erro
 	return err
 }
 
+const fetchConnections = `-- name: FetchConnections :many
+SELECT connection_id, id, my_mail_id, their_mail_id
+FROM connections
+WHERE my_mail_id = $1
+  AND their_mail_id = $2
+`
+
+type FetchConnectionsParams struct {
+	MyMailID    string
+	TheirMailID string
+}
+
+func (q *Queries) FetchConnections(ctx context.Context, arg FetchConnectionsParams) ([]Connection, error) {
+	rows, err := q.db.Query(ctx, fetchConnections, arg.MyMailID, arg.TheirMailID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Connection
+	for rows.Next() {
+		var i Connection
+		if err := rows.Scan(
+			&i.ConnectionID,
+			&i.ID,
+			&i.MyMailID,
+			&i.TheirMailID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getConnectionsByUserID = `-- name: GetConnectionsByUserID :many
 SELECT connection_id, id, my_mail_id, their_mail_id 
 FROM connections

@@ -308,6 +308,66 @@ func GetRecords(ConnectionId string) (models.ProofRecord, error) {
 	return responseBody, nil
 }
 
+// ! Search mymailId and theirmailid in connections
+// ! Make requests to /records(using their_mail_id)
+// * check connection state to be "done" but only check for the matching connection id that were retrieved previously.
+// * If state is done for any of the records then return "true" or "verified" for that connection
 func VerifyPresentation(w http.ResponseWriter, r *http.Request) {
-	
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	var request models.VerifyPresentationRequest
+	// Decode the request body into the req struct
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	queries := sql.New(db.DB)
+	connections, getDBErr := queries.FetchConnections(ctx, sql.FetchConnectionsParams{
+		TheirMailID: request.MyMailId,
+		MyMailID:    request.TheirMailID,
+	})
+
+	if getDBErr != nil {
+		log.Println("Error inserting connection to db : ", getDBErr.Error())
+		http.Error(w, "Error inserting connection to db : "+getDBErr.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	resp, err := http.Get("http://localhost:6041/present-proof-2.0/records")
+	if err != nil {
+		log.Println("Failed to contact external service")
+		return
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Println("Failed to read response")
+		return
+	}
+
+	var responseData models.GetRecordsResponse
+	marshalErr := json.Unmarshal(body, &responseData)
+	if marshalErr != nil {
+		log.Println("Error marshalling records response", marshalErr)
+		http.Error(w, "Error marshalling records response: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	for i := 0; i < len(responseData.Results); i++ {
+		if responseData.Results[i].ConnectionID == connections[0].ConnectionID {
+			if responseData.Results[i].State == "done" {
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(`{"message": "Presentation Verified Successfully"}`))
+				return
+			}
+		}
+	}
+
+	w.WriteHeader(http.StatusNotFound)
+	w.Write([]byte(`{"message": "Presentation Not Verified"}`))
+	defer resp.Body.Close()
+
 }
